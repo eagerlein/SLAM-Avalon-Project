@@ -1,0 +1,442 @@
+-- altera vhdl_input_version vhdl_2008
+------------------------------------------------------------------------
+--						SLAM
+-- Date: 2020-12-28
+-- Version: 2.0
+-- Description:
+-- Instantiates the memories and the modules: quadrant_scatter, voxel_filter, 
+-- and map_handler to operate SLAM over a reading from the sensor.
+-- V2.0 optimizes all adresses to match memroy sizes, attempting to
+--  fot the design in the FPGA Cyclone V device.
+------------------------------------------------------------------------
+LIBRARY ieee;
+	USE ieee.std_logic_1164.all;
+	USE ieee.std_logic_unsigned.all;
+	USE ieee.numeric_std.all;
+LIBRARY WORK;
+	USE work.my_package.all;
+------------------------------------------------------------------------
+ENTITY slam IS
+	PORT	(		clk						: 	IN 	STD_LOGIC;
+					rst						: 	IN 	STD_LOGIC;
+					strobe					:	IN		STD_LOGIC;
+					pointcloud_size		:	IN		STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+					sin_theta				:	IN		STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+					cos_theta				:	IN		STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+					diff_x					:	IN		STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+					diff_y					:	IN		STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+					wr_en_input_data		:	IN		STD_LOGIC;
+					input_data				:	IN		STD_LOGIC_VECTOR((3*DATA_WIDTH)-1 DOWNTO 0);
+					update_signal			:	IN		STD_LOGIC;
+					wr_addr_input_data	:	IN		STD_LOGIC_VECTOR(INPUT_DATA_ADDR_WIDTH-1 DOWNTO 0);
+					rd_adrr					:	IN		STD_LOGIC_VECTOR(MAP_ADDR_WIDTH-1 DOWNTO 0);
+					rd_en_map				:	IN		STD_LOGIC;
+					output_data				:	OUT	STD_LOGIC_VECTOR((3*DATA_WIDTH)-1 DOWNTO 0);	
+					map_size					:	OUT	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+					map_full					:	OUT	STD_LOGIC;
+					data_ready_quadrant	:	OUT	STD_LOGIC;
+					data_ready_voxel		:	OUT	STD_LOGIC;
+					hps						:	OUT	STD_LOGIC;
+					q_h						:	OUT	STD_LOGIC_VECTOR(1 DOWNTO 0);
+					data_ready				:	OUT	STD_LOGIC);
+END ENTITY;
+---------------------------------------------------------
+ARCHITECTURE structural OF slam IS
+	
+	SIGNAL	input_point_s			:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addr_from_input_s	:	STD_LOGIC_VECTOR(INPUT_DATA_ADDR_WIDTH-1 DOWNTO 0);-- read address from input array
+	SIGNAL	rd_addr_from_input_s1	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);-- read address from input array
+	SIGNAL	quadrant_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	map_size_s					:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	CONSTANT PADDSZEROS				:	STD_LOGIC_VECTOR(DATA_WIDTH-VOXEL_ADDR_WIDTH-1 DOWNTO 0):= (OTHERS => '0');
+	
+	SIGNAL	data_ready_qs			:	STD_LOGIC;
+	SIGNAL	data_ready_voxel_S	:	STD_LOGIC;
+	
+	--SIGNAL	wr_en_s					:	STD_LOGIC; -- write enable for output array
+	SIGNAL	wr_en_q1_s				:	STD_LOGIC;
+	SIGNAL	wr_en_q2_s				:	STD_LOGIC;
+	SIGNAL	wr_en_q3_s				:	STD_LOGIC;
+	SIGNAL	wr_en_q4_s				:	STD_LOGIC;
+
+	SIGNAL	wr_en_voxel_q1_s		:	STD_LOGIC;
+	SIGNAL	wr_en_voxel_q2_s		:	STD_LOGIC;
+	SIGNAL	wr_en_voxel_q3_s		:	STD_LOGIC;
+	SIGNAL	wr_en_voxel_q4_s		:	STD_LOGIC;
+	
+	SIGNAL	output_data_q1_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0); 
+	SIGNAL	output_data_q1_108_s	:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0); -- output_data from first quadrant_memory
+	SIGNAL	output_data_q2_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	output_data_q2_108_s	:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0); -- output_data from second quadrant_memory
+	SIGNAL	output_data_q3_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	output_data_q3_108_s	:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0); -- output_data from third quadrant_memory
+	SIGNAL	output_data_q4_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	output_data_q4_108_s	:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0); -- output_data from fourth quadrant_memory 
+
+	SIGNAL	voxel_q1_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	voxel_q2_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	voxel_q3_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	voxel_q4_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);	
+	
+	SIGNAL 	ready_scale_x_s		:	STD_LOGIC; -- data_ready from scale_convert2int
+	SIGNAL 	ready_scale_y_s		:	STD_LOGIC; -- data_ready from scale_convert2int
+	SIGNAL 	ready_scale_z_s		:	STD_LOGIC; -- data_ready from scale_convert2int
+	SIGNAL 	ready_scale_s			:	STD_LOGIC; -- data_ready from scale_convert2int
+	
+	SIGNAL	wr_addr_q1_s			:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for q1
+	SIGNAL	wr_addr_q2_s			:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for q2
+	SIGNAL	wr_addr_q3_s			:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for q3
+	SIGNAL	wr_addr_q4_s			:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for q4
+	
+
+	SIGNAL	wr_addr_voxel_q1_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for voxel q1
+	SIGNAL	wr_addr_voxel_q2_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for voxel q2
+	SIGNAL	wr_addr_voxel_q3_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for voxel q3
+	SIGNAL	wr_addr_voxel_q4_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0); -- write address for array for voxel q4
+
+	
+
+	SIGNAL	rd_addr_from_q1_s		:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- read address from output array for q1
+	SIGNAL	rd_addr_from_q2_s		:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- read address from output array for q2
+	SIGNAL	rd_addr_from_q3_s		:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- read address from output array for q3
+	SIGNAL	rd_addr_from_q4_s		:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- read address from output array for q4
+
+	SIGNAL	en_scale_s				:	STD_LOGIC; -- strobe for scale_convert2int
+	SIGNAL	last_s					:	STD_LOGIC; -- used for correction in last size for Quadrant_Scater module
+	SIGNAL	result_s					:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	result_x_s				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	result_x_reg			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	result_y_s				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	result_y_reg			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	result_z_s				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	result_z_reg			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	q1_s						:	STD_LOGIC;
+	SIGNAL	q2_s						:	STD_LOGIC;
+	SIGNAL	q3_s						:	STD_LOGIC;
+	SIGNAL	q4_s						:	STD_LOGIC;
+	
+	SIGNAL	q1_size_s				:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	q2_size_s				:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	q3_size_s				:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	q4_size_s				:	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	q1_voxel_size_s		:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	q2_voxel_size_s		:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	q3_voxel_size_s		:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	q4_voxel_size_s		:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	q1_size_consec			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	q2_size_consec			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	q3_size_consec			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	q4_size_consec			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	wr_addr_q1_uns_s		:	UNSIGNED(DATA_WIDTH-1 DOWNTO 0); 
+	SIGNAL	wr_addr_q2_uns_s		:	UNSIGNED(DATA_WIDTH-1 DOWNTO 0); 
+	SIGNAL	wr_addr_q3_uns_s		:	UNSIGNED(DATA_WIDTH-1 DOWNTO 0); 
+	SIGNAL	wr_addr_q4_uns_s		:	UNSIGNED(DATA_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	rd_addr_from_voxel_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);	
+
+	SIGNAL	data_ready_vf				:	STD_LOGIC;
+	SIGNAL	out_voxel_q1_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q1_point_108_s:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q2_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q2_point_108_s:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q3_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q3_point_108_s:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q4_point_s		:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	out_voxel_q4_point_108_s:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addr_from_voxel_q1_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addr_from_voxel_q2_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addr_from_voxel_q3_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addr_from_voxel_q4_s	:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	wr_en_map					:	STD_LOGIC;
+	SIGNAL	wr_addr_map_s				:	STD_LOGIC_VECTOR(MAP_ADDR_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	map_point_s					:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	map_point_128_s			:	STD_LOGIC_VECTOR(4*DATA_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	input_data_128_s			:	STD_LOGIC_VECTOR(4*DATA_WIDTH-1 DOWNTO 0);
+
+	SIGNAL	input_point_108_s			:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0);
+
+	
+
+	-- read data from map_handler memories
+	SIGNAL	rd_data_map_108_s			:	STD_LOGIC_VECTOR(IPMEM_DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_data_map_s				:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	rd_add_map_handler_s		:	STD_LOGIC_VECTOR(MAP_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addr_map_s				:	STD_LOGIC_VECTOR(MAP_ADDR_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	rd_en_mem_q1_s				:	STD_LOGIC;
+	SIGNAL	rd_en_mem_q2_s				:	STD_LOGIC;
+	SIGNAL	rd_en_mem_q3_s				:	STD_LOGIC;
+	SIGNAL	rd_en_mem_q4_s				:	STD_LOGIC;
+	
+	SIGNAL	rd_en_voxel_q1_s			:	STD_LOGIC;
+	SIGNAL	rd_en_voxel_q2_s			:	STD_LOGIC;
+	SIGNAL	rd_en_voxel_q3_s			:	STD_LOGIC;
+	SIGNAL	rd_en_voxel_q4_s			:	STD_LOGIC;
+	SIGNAL	rd_en_input_s				:	STD_LOGIC;
+	SIGNAL	rd_en_input_s1				:	STD_LOGIC;
+	SIGNAL	rd_en_map_s					:	STD_LOGIC;
+	SIGNAL	rd_en_map_handler_s		:	STD_LOGIC;
+	SIGNAL 	data_readys					:	STD_LOGIC_VECTOR(3 DOWNTO 0); -- Port signal pins
+BEGIN
+
+	--=========================================
+	-- 			Input Data Memory
+
+	--=========================================
+	point_cloud_data: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	INPUT_DATA_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & input_data,
+						rdaddress	=>	rd_addr_from_input_s,
+						rden			=>	rd_en_input_s,
+						wraddress	=>	wr_addr_input_data,
+						wren			=>	wr_en_input_data,
+						q				=>	input_point_108_s);
+	input_point_s	<=	input_point_108_s(Z_MSB DOWNTO 0);
+	--=========================================
+
+	-- 		Quadrant Data Memories
+
+	--=========================================
+	mem_q1: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	QUADRANT_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & quadrant_point_s,
+						rdaddress	=>	rd_addr_from_q1_s,
+						rden			=>	rd_en_mem_q1_s,
+						wraddress	=>	wr_addr_q1_s,
+						wren			=>	wr_en_q1_s,
+						q				=>	output_data_q1_108_s);
+	output_data_q1_s	<=	output_data_q1_108_s(Z_MSB DOWNTO 0);
+	
+	mem_q2: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	QUADRANT_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & quadrant_point_s,
+						rdaddress	=>	rd_addr_from_q2_s,
+						rden			=>	rd_en_mem_q2_s,
+						wraddress	=>	wr_addr_q2_s,
+						wren			=>	wr_en_q2_s,
+						q				=>	output_data_q2_108_s);
+	output_data_q2_s	<=	output_data_q2_108_s(Z_MSB DOWNTO 0);
+	
+
+	mem_q3: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	QUADRANT_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & quadrant_point_s,
+						rdaddress	=>	rd_addr_from_q3_s,
+						rden			=>	rd_en_mem_q3_s,
+						wraddress	=>	wr_addr_q3_s,
+						wren			=>	wr_en_q3_s,
+						q				=>	output_data_q3_108_s);
+	output_data_q3_s	<=	output_data_q3_108_s(Z_MSB DOWNTO 0);
+	
+	mem_q4: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	QUADRANT_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & quadrant_point_s,
+						rdaddress	=>	rd_addr_from_q4_s,
+						rden			=>	rd_en_mem_q4_s,
+						wraddress	=>	wr_addr_q4_s,
+						wren			=>	wr_en_q4_s,
+						q				=>	output_data_q4_108_s);
+	output_data_q4_s	<=	output_data_q4_108_s(Z_MSB DOWNTO 0);
+
+	--=========================================
+
+	-- 	Voxel Quadrant Data Memories
+
+	--=========================================
+	mem_voxel_q1: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	VOXEL_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & voxel_q1_point_s,
+						rdaddress	=>	rd_addr_from_voxel_s,
+						rden			=>	rd_en_voxel_q1_s,
+						wraddress	=>	wr_addr_voxel_q1_s,
+						wren			=>	wr_en_voxel_q1_s,
+						q				=>	out_voxel_q1_point_108_s);
+	out_voxel_q1_point_s	<=	out_voxel_q1_point_108_s(Z_MSB DOWNTO 0);
+	
+	
+	mem_voxel_q2: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	VOXEL_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & voxel_q2_point_s,
+						rdaddress	=>	rd_addr_from_voxel_s,
+						rden			=>	rd_en_voxel_q2_s,
+						wraddress	=>	wr_addr_voxel_q2_s,
+						wren			=>	wr_en_voxel_q2_s,
+						q				=>	out_voxel_q2_point_108_s);
+	out_voxel_q2_point_s	<=	out_voxel_q2_point_108_s(Z_MSB DOWNTO 0);	
+			
+
+	mem_voxel_q3: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	VOXEL_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & voxel_q3_point_s,
+						rdaddress	=>	rd_addr_from_voxel_s,
+						rden			=>	rd_en_voxel_q3_s,
+						wraddress	=>	wr_addr_voxel_q3_s,
+						wren			=>	wr_en_voxel_q3_s,
+						q				=>	out_voxel_q3_point_108_s);
+	out_voxel_q3_point_s	<=	out_voxel_q3_point_108_s(Z_MSB DOWNTO 0);
+	
+	mem_voxel_q4: 	ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	VOXEL_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & voxel_q4_point_s,
+						rdaddress	=>	rd_addr_from_voxel_s,
+						rden			=>	rd_en_voxel_q4_s,
+						wraddress	=>	wr_addr_voxel_q4_s,
+						wren			=>	wr_en_voxel_q4_s,
+						q				=>	out_voxel_q4_point_108_s);
+	out_voxel_q4_point_s	<=	out_voxel_q4_point_108_s(Z_MSB DOWNTO 0);
+	
+
+	--=========================================
+	-- 	Map Memory
+	--=========================================
+
+	mem_map: ENTITY work.ip_ram
+	GENERIC MAP(	ADDR_WIDTH	=>	MAP_ADDR_WIDTH)
+	PORT MAP	(		clock			=>	clk,
+						data			=>	PADDING_POINT2_IPMEM & map_point_s,
+						rdaddress	=>	rd_addr_map_s,
+						rden			=>	rd_en_map_s,
+						wraddress	=>	wr_addr_map_s,
+						wren			=>	wr_en_map,
+						q				=>	rd_data_map_108_s);
+	
+	rd_data_map_s	<=	rd_data_map_108_s(Z_MSB DOWNTO 0);
+
+	rd_addr_map_s	<=	rd_adrr 		WHEN	rd_en_map='1'	ELSE rd_add_map_handler_s;
+--	rd_addr_map_s	<=	rd_add_map_handler_s;
+	rd_en_map_s		<= rd_en_map 	OR rd_en_map_handler_s;
+
+	output_data<= rd_data_map_108_s(3*DATA_WIDTH-1 DOWNTO 0);
+	--========================================
+	--			quadrant_scatter INSTANTIATION
+	--========================================
+	quadrant_scatter_module:	ENTITY work.quadrant_scatter
+	PORT MAP	(		clk					=>	clk,
+						rst					=>	rst,
+						strobe				=>	strobe,
+						pointcloud_size	=>	pointcloud_size,
+						input_data			=> input_point_s(Z_MSB DOWNTO 0),
+						rd_addr_from_input=> rd_addr_from_input_s,
+						quadrant_point		=>	quadrant_point_s,
+						wr_addr_q1			=>	wr_addr_q1_s,
+						wr_addr_q2			=>	wr_addr_q2_s,
+						wr_addr_q3			=>	wr_addr_q3_s,
+						wr_addr_q4			=>	wr_addr_q4_s,
+						wr_en_q1				=>	wr_en_q1_s,
+						wr_en_q2				=>	wr_en_q2_s,
+						wr_en_q3				=>	wr_en_q3_s,
+						wr_en_q4				=>	wr_en_q4_s,
+						q1_size				=>	q1_size_s,
+						q2_size				=>	q2_size_s,
+						q3_size				=>	q3_size_s,
+						q4_size				=>	q4_size_s,
+						rd_en_input			=>	rd_en_input_s,		
+						data_ready			=>	data_ready_qs);
+
+	--========================================
+	--			voxel_filter INSTANTIATION
+	--========================================
+
+	voxel_filter_module:	ENTITY work.voxel_filter			
+	PORT MAP	(		clk					=>	clk,
+						rst					=>	rst,
+						strobe				=>	data_ready_qs,
+						q1_size				=>	q1_size_s,
+						q2_size				=>	q2_size_s,
+						q3_size				=>	q3_size_s,
+						q4_size				=>	q4_size_s,
+						input_data_q1		=> output_data_q1_s,
+						input_data_q2		=> output_data_q2_s,
+						input_data_q3		=> output_data_q3_s,
+						input_data_q4		=> output_data_q4_s,
+						rd_en_mem_q1		=>	rd_en_mem_q1_s,
+						rd_en_mem_q2		=>	rd_en_mem_q2_s,
+						rd_en_mem_q3		=>	rd_en_mem_q3_s,
+						rd_en_mem_q4		=>	rd_en_mem_q4_s,
+	
+						rd_addr_from_q1		=> rd_addr_from_q1_s,
+						rd_addr_from_q2		=> rd_addr_from_q2_s,
+						rd_addr_from_q3		=> rd_addr_from_q3_s,
+						rd_addr_from_q4		=> rd_addr_from_q4_s,
+						voxel_q1_point		=>	voxel_q1_point_s,
+						voxel_q2_point		=>	voxel_q2_point_s,
+						voxel_q3_point		=>	voxel_q3_point_s,
+						voxel_q4_point		=>	voxel_q4_point_s,
+						wr_addr_voxel_q1	=>	wr_addr_voxel_q1_s,
+						wr_addr_voxel_q2	=>	wr_addr_voxel_q2_s,
+						wr_addr_voxel_q3	=>	wr_addr_voxel_q3_s,
+						wr_addr_voxel_q4	=>	wr_addr_voxel_q4_s,
+						wr_en_q1				=>	wr_en_voxel_q1_s,
+						wr_en_q2				=>	wr_en_voxel_q2_s,
+						wr_en_q3				=>	wr_en_voxel_q3_s,
+						wr_en_q4				=>	wr_en_voxel_q4_s,
+						q1_voxel_size		=>	q1_voxel_size_s,
+						q2_voxel_size		=>	q2_voxel_size_s,
+						q3_voxel_size		=>	q3_voxel_size_s,
+						q4_voxel_size		=>	q4_voxel_size_s,
+						data_readys			=> data_readys,
+						data_ready			=>	data_ready_vf);
+
+	--========================================
+	--			map_handler INSTANTIATION
+	--========================================
+	map_handler_module:	ENTITY work.map_handler
+	PORT MAP	(		clk					=>	clk,
+						rst					=>	rst,
+						strobe				=>	strobe,		
+						ready_voxel			=> data_ready_vf,
+						sin_theta			=> sin_theta,
+						cos_theta			=> cos_theta,
+						diff_x				=> diff_x,
+						diff_y				=>	diff_y,
+						q1_voxel_size		=>	q1_voxel_size_s,
+						q2_voxel_size		=>	q2_voxel_size_s,
+						q3_voxel_size		=>	q3_voxel_size_s,
+						q4_voxel_size		=>	q4_voxel_size_s,
+						voxel_q1_point		=>	out_voxel_q1_point_s,
+						voxel_q2_point		=>	out_voxel_q2_point_s,
+						voxel_q3_point		=>	out_voxel_q3_point_s,
+						voxel_q4_point		=>	out_voxel_q4_point_s,
+						rd_en_voxel_q1		=>	rd_en_voxel_q1_s,
+						rd_en_voxel_q2		=>	rd_en_voxel_q2_s,
+						rd_en_voxel_q3		=>	rd_en_voxel_q3_s,
+						rd_en_voxel_q4		=>	rd_en_voxel_q4_s,
+						rd_addr_from_voxel=>	rd_addr_from_voxel_s,
+						rd_en_map			=>	rd_en_map_handler_s,
+						rd_point_from_map	=>	rd_data_map_s(Z_MSB DOWNTO 0),
+						rd_addr_from_map	=>	rd_add_map_handler_s,
+						wr_en					=> wr_en_map,
+						wr_addr_map			=>	wr_addr_map_s,
+						map_point			=>	map_point_s,
+						map_size				=>	map_size,
+						map_full				=>	map_full,
+--						en_sc2f				=>	data_ready_quadrant,
+--						ready_sc2f			=> data_ready_voxel,
+				--		hps					=>	hps,
+--						q_h					=>	q_h,
+						update_signal		=>	update_signal,
+						data_ready			=> data_ready);
+	data_ready_quadrant	<= data_readys(0);
+	data_ready_voxel		<=	data_readys(1);	
+	hps						<=	data_readys(2);
+	q_h(1)					<=	data_readys(3);
+	q_h(0)					<=	'1';
+	--map_size <= PADDSZEROS & q1_voxel_size_s;
+END ARCHITECTURE;

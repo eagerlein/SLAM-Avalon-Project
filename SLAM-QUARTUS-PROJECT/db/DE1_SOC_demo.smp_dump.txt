@@ -1,0 +1,386 @@
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|voxel_filter:voxel_filter_module|voxel_ready_fsm:voxel_ready_logic|pr_state
+Name pr_state.ready pr_state.wait_4_ready pr_state.idle 
+pr_state.idle 0 0 0 
+pr_state.wait_4_ready 0 1 1 
+pr_state.ready 1 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|voxel_filter:voxel_filter_module|voxel_quadrant:voxel_filter_q4|voxel_fsm:control_fsm|pr_state
+Name pr_state.ready pr_state.register_size pr_state.inc_voxel_size pr_state.wait_write pr_state.write_voxel pr_state.dividing pr_state.new_neighbour pr_state.calc_dist pr_state.inc_j pr_state.reg_j_point pr_state.fetching_j_point pr_state.init_new_voxel_cell pr_state.inc_i pr_state.reg_current_point pr_state.fetching_current_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+pr_state.fetching_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+pr_state.reg_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+pr_state.inc_i 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+pr_state.init_new_voxel_cell 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+pr_state.fetching_j_point 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+pr_state.reg_j_point 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+pr_state.inc_j 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+pr_state.calc_dist 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+pr_state.new_neighbour 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+pr_state.dividing 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+pr_state.write_voxel 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.wait_write 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.inc_voxel_size 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.register_size 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|voxel_filter:voxel_filter_module|voxel_quadrant:voxel_filter_q3|voxel_fsm:control_fsm|pr_state
+Name pr_state.ready pr_state.register_size pr_state.inc_voxel_size pr_state.wait_write pr_state.write_voxel pr_state.dividing pr_state.new_neighbour pr_state.calc_dist pr_state.inc_j pr_state.reg_j_point pr_state.fetching_j_point pr_state.init_new_voxel_cell pr_state.inc_i pr_state.reg_current_point pr_state.fetching_current_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+pr_state.fetching_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+pr_state.reg_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+pr_state.inc_i 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+pr_state.init_new_voxel_cell 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+pr_state.fetching_j_point 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+pr_state.reg_j_point 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+pr_state.inc_j 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+pr_state.calc_dist 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+pr_state.new_neighbour 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+pr_state.dividing 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+pr_state.write_voxel 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.wait_write 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.inc_voxel_size 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.register_size 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|voxel_filter:voxel_filter_module|voxel_quadrant:voxel_filter_q2|voxel_fsm:control_fsm|pr_state
+Name pr_state.ready pr_state.register_size pr_state.inc_voxel_size pr_state.wait_write pr_state.write_voxel pr_state.dividing pr_state.new_neighbour pr_state.calc_dist pr_state.inc_j pr_state.reg_j_point pr_state.fetching_j_point pr_state.init_new_voxel_cell pr_state.inc_i pr_state.reg_current_point pr_state.fetching_current_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+pr_state.fetching_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+pr_state.reg_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+pr_state.inc_i 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+pr_state.init_new_voxel_cell 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+pr_state.fetching_j_point 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+pr_state.reg_j_point 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+pr_state.inc_j 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+pr_state.calc_dist 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+pr_state.new_neighbour 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+pr_state.dividing 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+pr_state.write_voxel 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.wait_write 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.inc_voxel_size 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.register_size 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|voxel_filter:voxel_filter_module|voxel_quadrant:voxel_filter_q1|voxel_fsm:control_fsm|pr_state
+Name pr_state.ready pr_state.register_size pr_state.inc_voxel_size pr_state.wait_write pr_state.write_voxel pr_state.dividing pr_state.new_neighbour pr_state.calc_dist pr_state.inc_j pr_state.reg_j_point pr_state.fetching_j_point pr_state.init_new_voxel_cell pr_state.inc_i pr_state.reg_current_point pr_state.fetching_current_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+pr_state.fetching_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+pr_state.reg_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+pr_state.inc_i 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+pr_state.init_new_voxel_cell 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+pr_state.fetching_j_point 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+pr_state.reg_j_point 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+pr_state.inc_j 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+pr_state.calc_dist 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+pr_state.new_neighbour 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+pr_state.dividing 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+pr_state.write_voxel 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.wait_write 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.inc_voxel_size 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.register_size 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scale_convert2int:scale_n_convert2int_Z|float2int:FP2INT_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scale_convert2int:scale_n_convert2int_Z|float_multiplier:FP_MULTIPLIER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scale_convert2int:scale_n_convert2int_Y|float2int:FP2INT_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scale_convert2int:scale_n_convert2int_Y|float_multiplier:FP_MULTIPLIER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scale_convert2int:scale_n_convert2int_X|float2int:FP2INT_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scale_convert2int:scale_n_convert2int_X|float_multiplier:FP_MULTIPLIER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|quadrant_scatter:quadrant_scatter_module|scatter_control_fsm:control_fsm|pr_state
+Name pr_state.ready pr_state.strobe_convert pr_state.inc_counters pr_state.writing_mem pr_state.converting2int pr_state.fetching_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 
+pr_state.fetching_point 0 0 0 0 0 1 1 
+pr_state.converting2int 0 0 0 0 1 0 1 
+pr_state.writing_mem 0 0 0 1 0 0 1 
+pr_state.inc_counters 0 0 1 0 0 0 1 
+pr_state.strobe_convert 0 1 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|soc_system1_mm_interconnect_0:mm_interconnect_0|altera_merlin_burst_adapter:slam_0_avalon_slave_0_burst_adapter|altera_merlin_burst_adapter_13_1:altera_merlin_burst_adapter_13_1.burst_adapter|state
+Name state.ST_IDLE state.ST_UNCOMP_WR_SUBBURST state.ST_UNCOMP_TRANS state.ST_COMP_TRANS 
+state.ST_IDLE 0 0 0 0 
+state.ST_COMP_TRANS 1 0 0 1 
+state.ST_UNCOMP_TRANS 1 0 1 0 
+state.ST_UNCOMP_WR_SUBBURST 1 1 0 0 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_handler_fsm:map_handler_control|pr_state
+Name pr_state.ready pr_state.wait_for_init pr_state.strobe_init pr_state.wait_for_update pr_state.strobe_update pr_state.wait_for_vx_and_tf pr_state.strobe_transform pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 
+pr_state.strobe_transform 0 0 0 0 0 0 1 1 
+pr_state.wait_for_vx_and_tf 0 0 0 0 0 1 0 1 
+pr_state.strobe_update 0 0 0 0 1 0 0 1 
+pr_state.wait_for_update 0 0 0 1 0 0 0 1 
+pr_state.strobe_init 0 0 1 0 0 0 0 1 
+pr_state.wait_for_init 0 1 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|pr_state
+Name pr_state.ready pr_state.verify_qsel pr_state.inc_quadrant pr_state.vq2map pr_state.strobe_vq2map pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 
+pr_state.strobe_vq2map 0 0 0 0 1 1 
+pr_state.vq2map 0 0 0 1 0 1 
+pr_state.inc_quadrant 0 0 1 0 0 1 
+pr_state.verify_qsel 0 1 0 0 0 1 
+pr_state.ready 1 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|pr_state
+Name pr_state.ready pr_state.inc_map_size pr_state.reg_j_point pr_state.strobe_compare pr_state.strobe_convert pr_state.wait_new_point pr_state.write_new_point pr_state.comparing_points pr_state.update_map_size_reg pr_state.converting_to_float pr_state.inc_j pr_state.fetching_j_point pr_state.wait_current_point pr_state.write_current_point pr_state.inc_i pr_state.fetching_voxel_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+pr_state.fetching_voxel_point 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+pr_state.inc_i 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+pr_state.write_current_point 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+pr_state.wait_current_point 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+pr_state.fetching_j_point 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+pr_state.inc_j 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+pr_state.converting_to_float 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+pr_state.update_map_size_reg 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+pr_state.comparing_points 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+pr_state.write_new_point 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+pr_state.wait_new_point 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.strobe_convert 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.strobe_compare 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.reg_j_point 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.inc_map_size 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|map_neighbour_detector:neighbour_detector_module|float_comparator:z_comparator|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|map_neighbour_detector:neighbour_detector_module|float_comparator:y_comparator|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|map_neighbour_detector:neighbour_detector_module|float_comparator:x_comparator|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|map_neighbour_detector:neighbour_detector_module|float_add_sub:diff_z_sub|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|map_neighbour_detector:neighbour_detector_module|float_add_sub:diff_y_sub|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|map_neighbour_detector:neighbour_detector_module|float_add_sub:diff_x_sub|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|scale_convert2float:sc2f_z|int2float:INT2FP_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|scale_convert2float:sc2f_z|float_divisor:FP_DIVISOR|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_transform_fsm:map_cord_transf_control|pr_state
+Name pr_state.ready pr_state.inc_counter pr_state.wait_mem pr_state.writing_mem pr_state.transform pr_state.strobe_transform pr_state.fetching_point pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 
+pr_state.fetching_point 0 0 0 0 0 0 1 1 
+pr_state.strobe_transform 0 0 0 0 0 1 0 1 
+pr_state.transform 0 0 0 0 1 0 0 1 
+pr_state.writing_mem 0 0 0 1 0 0 0 1 
+pr_state.wait_mem 0 0 1 0 0 0 0 1 
+pr_state.inc_counter 0 1 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_init_fsm:map_init_control|pr_state
+Name pr_state.ready pr_state.inc_quadrant pr_state.inc_counters pr_state.writing_mem pr_state.converting2float pr_state.reg_point_strobe_convert pr_state.fetching_point pr_state.wait_for_voxel pr_state.idle 
+pr_state.idle 0 0 0 0 0 0 0 0 0 
+pr_state.wait_for_voxel 0 0 0 0 0 0 0 1 1 
+pr_state.fetching_point 0 0 0 0 0 0 1 0 1 
+pr_state.reg_point_strobe_convert 0 0 0 0 0 1 0 0 1 
+pr_state.converting2float 0 0 0 0 1 0 0 0 1 
+pr_state.writing_mem 0 0 0 1 0 0 0 0 1 
+pr_state.inc_counters 0 0 1 0 0 0 0 0 1 
+pr_state.inc_quadrant 0 1 0 0 0 0 0 0 1 
+pr_state.ready 1 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|scale_convert2float:sc2f_x|int2float:INT2FP_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|scale_convert2float:sc2f_x|float_divisor:FP_DIVISOR|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|scale_convert2float:sc2f_z|int2float:INT2FP_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|scale_convert2float:sc2f_z|float_divisor:FP_DIVISOR|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_add_sub:new_y_adder|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_add_sub:new_x_adder|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_multiplier:tempy_cos_mult|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_multiplier:tempy_sin_mult|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_multiplier:tempx_cos_mult|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_multiplier:tempx_sin_mult|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|scale_convert2float:sc2f_y|int2float:INT2FP_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|scale_convert2float:sc2f_y|float_divisor:FP_DIVISOR|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|scale_convert2float:sc2f_x|int2float:INT2FP_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|scale_convert2float:sc2f_x|float_divisor:FP_DIVISOR|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|scale_convert2float:sc2f_y|int2float:INT2FP_CONVERTER|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|map_update_fsm:map_update_control|quadrant_to_map_fsm:vq2map_module|scale_convert2float:sc2f_y|float_divisor:FP_DIVISOR|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_add_sub:diff_y_sub|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system1:soc_system_inst|slam_avalon:slam_0|slam:slam_module|map_handler:map_handler_module|coord_transform:coord_transform_module|float_add_sub:diff_x_sub|pr_state
+Name pr_state.reseting_op pr_state.ready pr_state.operating pr_state.idle 
+pr_state.idle 0 0 0 0 
+pr_state.operating 0 0 1 1 
+pr_state.ready 0 1 0 1 
+pr_state.reseting_op 1 0 0 1 

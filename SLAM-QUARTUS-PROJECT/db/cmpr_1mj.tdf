@@ -1,0 +1,60 @@
+--lpm_compare CBX_DECLARE_ALL_CONNECTED_PORTS="OFF" DEVICE_FAMILY="Cyclone V" LPM_PIPELINE=1 LPM_REPRESENTATION="UNSIGNED" LPM_WIDTH=7 aclr aeb agb clken clock dataa datab CARRY_CHAIN="MANUAL" CARRY_CHAIN_LENGTH=48
+--VERSION_BEGIN 17.0 cbx_cycloneii 2017:04:19:09:17:27:SJ cbx_lpm_add_sub 2017:04:19:09:17:27:SJ cbx_lpm_compare 2017:04:19:09:17:27:SJ cbx_mgl 2017:04:19:10:26:36:SJ cbx_nadder 2017:04:19:09:17:27:SJ cbx_stratix 2017:04:19:09:17:27:SJ cbx_stratixii 2017:04:19:09:17:27:SJ  VERSION_END
+
+
+-- Copyright (C) 2017  Intel Corporation. All rights reserved.
+--  Your use of Intel Corporation's design tools, logic functions 
+--  and other software and tools, and its AMPP partner logic 
+--  functions, and any output files from any of the foregoing 
+--  (including device programming or simulation files), and any 
+--  associated documentation or information are expressly subject 
+--  to the terms and conditions of the Intel Program License 
+--  Subscription Agreement, the Intel Quartus Prime License Agreement,
+--  the Intel MegaCore Function License Agreement, or other 
+--  applicable license agreement, including, without limitation, 
+--  that your use is for the sole purpose of programming logic 
+--  devices manufactured by Intel and sold by Intel or its 
+--  authorized distributors.  Please refer to the applicable 
+--  agreement for further details.
+
+
+
+--synthesis_resources = lut 23 
+SUBDESIGN cmpr_1mj
+( 
+	aclr	:	input;
+	aeb	:	output;
+	agb	:	output;
+	clken	:	input;
+	clock	:	input;
+	dataa[6..0]	:	input;
+	datab[6..0]	:	input;
+) 
+VARIABLE
+	aeb_int	:	WIRE;
+	agb_int	:	WIRE;
+	aeb_dffe[0..0]	:	DFFE;
+	agb_dffe[0..0]	:	DFFE;
+BEGIN 
+	IF (dataa[] == datab[]) THEN
+		aeb_int = VCC;
+	ELSE
+		aeb_int = GND;
+	END IF;
+	IF (dataa[] > datab[]) THEN
+		agb_int = VCC;
+	ELSE
+		agb_int = GND;
+	END IF;
+	aeb_dffe[0].d = aeb_int;
+	aeb = aeb_dffe[0].q;
+	agb_dffe[0].d = agb_int;
+	agb = agb_dffe[0].q;
+	aeb_dffe[].clrn = !aclr;
+	aeb_dffe[].ena = clken;
+	aeb_dffe[].clk = clock;
+	agb_dffe[].clrn = !aclr;
+	agb_dffe[].ena = clken;
+	agb_dffe[].clk = clock;
+END;
+--VALID FILE

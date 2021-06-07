@@ -1,0 +1,12 @@
+PowerPlay Power Analyzer Status : Successful - Mon May 10 16:32:26 2021
+Quartus Prime Version : 17.0.0 Build 595 04/25/2017 SJ Lite Edition
+Revision Name : DE1_SOC_demo
+Top-level Entity Name : DE1_SoC_top_level
+Family : Cyclone V
+Device : 5CSEMA5F31C6
+Power Models : Final
+Total Thermal Power Dissipation : 563.87 mW
+Core Dynamic Thermal Power Dissipation : 96.56 mW
+Core Static Thermal Power Dissipation : 419.72 mW
+I/O Thermal Power Dissipation : 47.59 mW
+Power Estimation Confidence : Low: user provided insufficient toggle rate data

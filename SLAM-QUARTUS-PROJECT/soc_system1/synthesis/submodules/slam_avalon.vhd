@@ -1,0 +1,255 @@
+-- altera vhdl_input_version vhdl_2008
+------------------------------------------------------------------------
+--						scale_convert2int_avalon
+-- Date: 2020-10-20
+-- Version: 1.0
+-- WARNING:  "VHDL-2008" must be set to project settings (Assigments>>Settings>>VHDL Input)
+-- Description:
+-- Intantiates: slam module
+-- This module receive the pointcloud data from lidar and odometry data 
+-- Send to Hps a memory of the current map with the previous points
+------------------------------------------------------------------------
+LIBRARY ieee;
+	USE ieee.std_logic_1164.all;
+	USE ieee.std_logic_unsigned.all;
+	USE ieee.numeric_std.all;
+LIBRARY WORK;
+	USE work.my_package.all;
+LIBRARY IEEE;
+USE ieee.std_logic_1164.all;
+----------------------------------------------------------------------
+ENTITY slam_avalon IS
+--	GENERIC	(	DATA_WIDTH			:	INTEGER	:=	32;
+--					ADDR_WIDTH			:	INTEGER	:=	6);
+	PORT	 (		-- TO BE CONNECTED TO AVALON CLOCK INPUT INTERFACE
+					clk					:	IN		STD_LOGIC;
+					reset 				:	IN		STD_LOGIC;
+					-- TO BE CONNECTED TO AVALON MM SLAVE INTERFACE
+					s_address			:	IN		STD_LOGIC_VECTOR(ADDR_AVALON_WIDTH-1 DOWNTO 0);
+					s_chipselect		:	IN		STD_LOGIC;
+					s_write				: 	IN 	STD_LOGIC;
+					--s_read				: 	IN 	STD_LOGIC;
+					--s_readdatavalid	: 	OUT 	STD_LOGIC;
+					s_writedata			: 	IN 	STD_LOGIC_VECTOR(4*DATA_WIDTH-1 DOWNTO 0);
+					s_readdata			: 	OUT 	STD_LOGIC_VECTOR(4*DATA_WIDTH-1 DOWNTO 0);
+					-- TO BE CONNECTED TO AVALON INTERRUPT SENDER INTERFACE
+					s_q					: 	OUT 	STD_LOGIC;
+					s_v					: 	OUT 	STD_LOGIC;
+					q_h					:	OUT	STD_LOGIC_VECTOR(1 DOWNTO 0);
+					hps					:	OUT	STD_LOGIC;
+					s_irq					: 	OUT 	STD_LOGIC);
+END ENTITY slam_avalon;
+----------------------------------------------------------------------
+ARCHITECTURE avalonMMslave OF slam_avalon IS
+	-- Registers
+	SIGNAL	start_bit								: 	STD_LOGIC;
+	SIGNAL	update_signal							:	STD_LOGIC;
+	SIGNAL	update_signal_s						:	STD_LOGIC;
+	SIGNAL	set_done_tick							: 	STD_LOGIC;
+	SIGNAL	set_done_tick1							: 	STD_LOGIC;
+	SIGNAL	set_done_tick2							: 	STD_LOGIC;
+	SIGNAL	set_done_tick3							: 	STD_LOGIC;
+	SIGNAL	set_done_tick4							: 	STD_LOGIC;
+	SIGNAL	set_done_tick_aux						:	STD_LOGIC_VECTOR(1 DOWNTO 0);
+	SIGNAL	clr_done_tick							: 	STD_LOGIC;
+	
+	SIGNAL	pointcloud_size_reg					:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	input_data_s							: 	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	output_data_s							: 	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	
+	
+	SIGNAL	done_tick_reg							: 	STD_LOGIC;
+	SIGNAL	done_tick_reg1							: 	STD_LOGIC;
+	SIGNAL	done_tick_reg2							: 	STD_LOGIC;
+	SIGNAL	done_tick_reg3							: 	STD_LOGIC;
+	SIGNAL	done_tick_reg4							: 	STD_LOGIC;
+	
+	SIGNAL	wr_addres_to_input_s					:	UNSIGNED(ADDR_AVALON_WIDTH-1 DOWNTO 0);
+	SIGNAL	wr_addres_to_input_truncated_s	:	UNSIGNED(INPUT_DATA_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	wr_addres_to_input_std_s			:	STD_LOGIC_VECTOR(INPUT_DATA_ADDR_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	sin_theta_reg							:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	cos_theta_reg							:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	diff_x_reg								:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	diff_y_reg								:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	map_size_s								:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	map_size_reg							:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	rd_addres_from_map_uns_s			:	UNSIGNED(ADDR_AVALON_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addres_from_map_trunc_s			:	UNSIGNED(MAP_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	rd_addres_from_map_s					:	STD_LOGIC_VECTOR(MAP_ADDR_WIDTH-1 DOWNTO 0);
+		
+	SIGNAL	readdata_s								:	STD_LOGIC_VECTOR(4*DATA_WIDTH-1 DOWNTO 0);
+	
+	-- Flags
+	SIGNAL	wr_en										: 	STD_LOGIC;
+	SIGNAL	wr_size									: 	STD_LOGIC;
+	SIGNAL	wr_input_data							: 	STD_LOGIC;
+	SIGNAL	rd_en_map_s								: 	STD_LOGIC;
+	SIGNAL	wr_sin_theta							: 	STD_LOGIC;
+	SIGNAL	wr_cos_theta							: 	STD_LOGIC;
+	SIGNAL	wr_diff_x								: 	STD_LOGIC;
+	SIGNAL	wr_diff_y								: 	STD_LOGIC;
+	SIGNAL	rd_en										: 	STD_LOGIC;
+	SIGNAL	clr_rd_reg								: 	STD_LOGIC;
+	
+	
+BEGIN
+	--========================================
+	--			SLAM INSTANTIATION
+	--========================================
+	slam_module:	ENTITY work.slam		
+	PORT MAP	(		clk						=>	clk,
+						rst						=>	reset,
+						strobe					=>	start_bit,
+						pointcloud_size		=>	pointcloud_size_reg,
+						sin_theta				=>	sin_theta_reg,
+						cos_theta				=>	cos_theta_reg,
+						diff_x					=>	diff_x_reg,
+						diff_y					=>	diff_y_reg,
+						wr_en_input_data		=>	wr_input_data,
+						input_data				=>	input_data_s,
+						update_signal			=>	update_signal_s,
+						wr_addr_input_data	=>	wr_addres_to_input_std_s,
+						rd_adrr					=> rd_addres_from_map_s,
+						rd_en_map				=>	rd_en_map_s,
+						output_data				=> output_data_s,
+						map_size					=>	map_size_s,
+						map_full					=> OPEN,
+						data_ready_quadrant	=>	set_done_tick1,
+						data_ready_voxel		=>	set_done_tick2,
+						hps						=>	set_done_tick3,
+						q_h						=>	set_done_tick_aux,
+						data_ready				=>	set_done_tick);
+	set_done_tick4 <= set_done_tick_aux(1);				
+	--========================================
+	--					REGISTERS
+	--========================================
+	--Construct Read INPUT address pointer from avalon address... Differente vector size
+	wr_addres_to_input_s					<=	unsigned(s_address)-INPUT_DATA_OFFSET_UNSIGNED	WHEN wr_input_data = '1' ELSE	(OTHERS => '0');	
+	wr_addres_to_input_truncated_s	<= wr_addres_to_input_s(INPUT_DATA_ADDR_WIDTH-1 DOWNTO 0);
+	wr_addres_to_input_std_s			<=	STD_lOGIC_VECTOR(wr_addres_to_input_truncated_s);
+	
+	PROCESS( clk, reset, wr_size,wr_input_data,set_done_tick,clr_done_tick)
+	BEGIN
+		IF (reset = '1')THEN
+			pointcloud_size_reg			<=	(OTHERS => '0');
+			done_tick_reg					<= '0';
+			map_size_reg					<=	(OTHERS => '0');
+			sin_theta_reg					<=	(OTHERS => '0');
+			cos_theta_reg					<=	(OTHERS => '0');
+			diff_x_reg						<=	(OTHERS => '0');
+			diff_y_reg						<=	(OTHERS => '0');
+		ELSIF (rising_edge(clk)) THEN
+			------------------------------------
+			IF (wr_size = '1') THEN
+				pointcloud_size_reg	<=	s_writedata(DATA_WIDTH-1 DOWNTO 0);
+			END IF;
+			------------------------------------
+			IF (wr_input_data = '1') THEN
+				input_data_s	<=	s_writedata(3*DATA_WIDTH-1 DOWNTO 0);
+			END IF;
+			------------------------------------
+			IF (set_done_tick = '1') THEN
+				done_tick_reg	<= '1';
+			ELSIF (clr_done_tick = '1' ) THEN
+				done_tick_reg	<= '0';
+				update_signal_s <='0';
+			END IF;
+			IF (set_done_tick1 = '1') THEN
+				done_tick_reg1	<= '1';
+			ELSIF (clr_done_tick = '1' ) THEN
+				done_tick_reg1	<= '0';
+			END IF;
+			IF (set_done_tick2 = '1') THEN
+				done_tick_reg2	<= '1';
+			ELSIF (clr_done_tick = '1' ) THEN
+				done_tick_reg2	<= '0';
+			END IF;
+			IF (set_done_tick3 = '1') THEN
+				done_tick_reg3	<= '1';
+			ELSIF (clr_done_tick = '1' ) THEN
+				done_tick_reg3	<= '0';
+			END IF;
+			IF (set_done_tick4 = '1') THEN
+				done_tick_reg4	<= '1';
+			ELSIF (clr_done_tick = '1' ) THEN
+				done_tick_reg4	<= '0';
+			END IF;
+			----------------------------------
+			IF (set_done_tick = '1') THEN
+				map_size_reg			<=	map_size_s;
+			END IF;
+			----------------------------------
+			IF (wr_sin_theta = '1') THEN
+				sin_theta_reg	<=	s_writedata(DATA_WIDTH-1 DOWNTO 0);
+			END IF;
+			----------------------------------
+			IF (wr_cos_theta = '1') THEN
+				cos_theta_reg	<=	s_writedata(DATA_WIDTH-1 DOWNTO 0);
+			END IF;
+			----------------------------------
+			IF (wr_diff_x = '1') THEN
+				diff_x_reg	<=	s_writedata(DATA_WIDTH-1 DOWNTO 0);
+			END IF;
+			----------------------------------
+			IF (wr_diff_y = '1') THEN
+				diff_y_reg	<=	s_writedata(DATA_WIDTH-1 DOWNTO 0);
+			END IF;
+			IF (update_signal ='1') THEN
+				update_signal_s<= '1';
+			END IF;
+			----------------------------------			
+		END IF;
+	END PROCESS;
+	
+	--===readdata_s=====================================readdata_s
+	--				WRITE DECODING LOGIC
+	--========================================	
+	wr_en 			<= '1' 	WHEN	(s_write='1' 								AND s_chipselect='1')	ELSE '0';	
+	start_bit 		<=	'1'	WHEN	(s_address=START_BIT_OFFSET 			AND wr_en='1')				ELSE '0';
+	clr_done_tick	<=	'1'	WHEN	(s_address=DONE_TICK_OFFSET 			AND wr_en='1')				ELSE '0';	
+	wr_size			<= '1' 	WHEN	(s_address=POINTCLOUD_SIZE_OFFSET 	AND wr_en='1')				ELSE '0';
+	wr_input_data	<= '1' 	WHEN	(s_address>=INPUT_DATA_OFFSET 		AND wr_en='1')				ELSE '0';	
+	wr_sin_theta	<= '1' 	WHEN	(s_address=SIN_THETA_OFFSET 			AND wr_en='1')				ELSE '0';	
+	wr_cos_theta	<= '1' 	WHEN	(s_address=COS_THETA_OFFSET 			AND wr_en='1')				ELSE '0';	
+	wr_diff_x		<= '1' 	WHEN	(s_address=DIFF_X_OFFSET 				AND wr_en='1')				ELSE '0';	
+	wr_diff_y		<= '1' 	WHEN	(s_address=DIFF_Y_OFFSET 				AND wr_en='1')				ELSE '0';	
+	update_signal	<=	'1'	WHEN  (s_address=UPDATE_VALID					AND wr_en='1')				ELSE '0';	
+		
+	
+	--========================================
+	--					READ LOGIC
+	--========================================
+	--rd_en 			<= '1' 	WHEN	(s_read='1'	AND s_chipselect='1')	ELSE '0';
+	rd_en_map_s		<=	'1'	WHEN	s_address>=OUTPUT_DATA_OFFSET  ELSE '0';
+	
+	--Construct read OUTPUT address pointers from avalon address... Differente vector size
+	rd_addres_from_map_uns_s	<=	unsigned(s_address)-OUTPUT_DATA_OFFSET_UNSIGNED;
+	rd_addres_from_map_trunc_s	<=	rd_addres_from_map_uns_s(MAP_ADDR_WIDTH-1 DOWNTO 0);
+	rd_addres_from_map_s			<= STD_LOGIC_VECTOR(rd_addres_from_map_trunc_s);
+										
+	
+	s_readdata	<= 	PADDING_WORD & PADDING_BIT & done_tick_reg	WHEN	s_address=DONE_TICK_OFFSET		ELSE
+							PADDING_WORD & map_size_reg						WHEN	s_address=MAP_SIZE_REG_OFFSET	ELSE
+							ZEROS & output_data_s								WHEN	rd_en_map_s =	'1'				ELSE
+							(OTHERS => '0');
+							
+	--========================================
+	--			 INTERRUPT REQUEST SIGNAL
+	--========================================
+	s_irq  <= done_tick_reg;
+	s_q	 <=	done_tick_reg1;
+	s_v	 <=	done_tick_reg2;
+	hps	 <= done_tick_reg3;
+	q_h(1) <=	done_tick_reg4;
+	q_h(0) <=	set_done_tick_aux(0);
+END ARCHITECTURE;
+
+						
+						
+						
+						
+						
+						

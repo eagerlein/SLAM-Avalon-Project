@@ -1,0 +1,304 @@
+-- altera vhdl_input_version vhdl_2008
+------------------------------------------------------------------------
+--						voxel_filter
+-- Date: 2020-12-28
+-- Version: 2.0
+-- Description:
+-- Intantiates: Voxel Control FSM, REGISTERS,  accum input Multiplexers, Adders , Divisors, Neighbour Detection Logic 
+-- and OUTPUT LOGIC
+-- The module is the procedure of organice the points of each cuadrant by nearest distance
+
+------------------------------------------------------------------------
+LIBRARY ieee;
+	USE ieee.std_logic_1164.all;
+	USE ieee.std_logic_unsigned.all;
+	USE ieee.numeric_std.all;
+LIBRARY WORK;
+	USE work.my_package.all;
+------------------------------------------------------------------------
+ENTITY voxel_quadrant IS
+			
+	PORT 	(		clk					: 	IN 	STD_LOGIC;
+					rst					: 	IN 	STD_LOGIC;
+					strobe				:	IN		STD_LOGIC;--Start bit
+					quadrant_size		:	IN		STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0); -- Size of quadrant memory
+					input_data			:	IN		STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0); -- Data from the quadrant memory 
+					rd_en					:	OUT	STD_LOGIC; -- signal that enable the read data from voxel filter memory 
+					rd_add_from_q		:	OUT	STD_LOGIC_VECTOR(QUADRANT_ADDR_WIDTH-1 DOWNTO 0);-- -- signal that enable the read data from quadrant scatter memory
+					voxel_point			:	OUT	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+					wr_addr_voxel		:	OUT	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+					wr_en					:	OUT	STD_LOGIC;
+					voxel_size			:	OUT	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+					data_ready			:	OUT	STD_LOGIC);
+
+END ENTITY;
+---------------------------------------------------------
+ARCHITECTURE structural OF voxel_quadrant IS
+	SIGNAL	neighbour_flag_s		:	STD_LOGIC;
+	SIGNAL	n_s						:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	en_CR_s					:	STD_LOGIC; 
+	SIGNAL	en_J_s					:	STD_LOGIC;
+	SIGNAL	en_accum_s				:	STD_LOGIC;
+	SIGNAL	sel_accum_s				:	STD_LOGIC;
+	SIGNAL	en_size_s				:	STD_LOGIC;
+	SIGNAL	voxel_full_s			:	STD_LOGIC;
+	
+	SIGNAL	current_point_x_reg	:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	current_point_y_reg	:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	current_point_z_reg	:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	j_point_x_reg			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	j_point_y_reg			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	j_point_z_reg			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	accum_input_x_s		:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_x_reg				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_input_y_s		:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_y_reg				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_input_z_s		:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_z_reg				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	accum_x_s				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_y_s				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	accum_z_s				:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	size_s					:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	size_reg					:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	SIGNAL	wr_addr_voxel_s		:	STD_LOGIC_VECTOR(VOXEL_ADDR_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	dist_x_s					:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	dist_y_s					:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	dist_z_s					:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+	SIGNAL	centroid_s				:	STD_LOGIC_VECTOR(3*DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	centroid_x_s			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	centroid_y_s			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	SIGNAL	centroid_z_s			:	STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
+	
+BEGIN
+	--===================================
+	--			Voxel Control FSM
+	--===================================
+	control_fsm: ENTITY WORK.voxel_fsm 		
+	PORT MAP 	(	clk					=>	clk,
+						rst					=>	rst,
+						strobe				=>	strobe,
+						quadrant_size		=>	quadrant_size,
+						neighbour_flag		=>	neighbour_flag_s,
+						rd_add				=>	rd_add_from_q,
+						rd_en					=>	rd_en,
+						wr_addr				=>	wr_addr_voxel_s,
+						voxel_full			=> voxel_full_s,
+						n						=>	n_s,
+						wr_en					=>	wr_en,
+						en_CR					=>	en_CR_s,
+						en_J					=>	en_J_s,
+						en_accum				=>	en_accum_s,
+						sel_accum			=>	sel_accum_s,
+						en_size				=>	en_size_s,
+						data_ready			=>	data_ready);
+	
+	--===================================
+	--			REGISTERS
+	--===================================
+							
+	current_X_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_CR_s,
+							syn_clr				=>	'0',
+							d						=>	input_data(X_MSB DOWNTO X_LSB),
+							q						=>	current_point_x_reg);
+	
+	current_Y_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_CR_s,
+							syn_clr				=>	'0',
+							d						=>	input_data(Y_MSB DOWNTO Y_LSB),
+							q						=>	current_point_y_reg);
+						
+	current_Z_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_CR_s,
+							syn_clr				=>	'0',
+							d						=>	input_data(Z_MSB DOWNTO Z_LSB),
+							q						=>	current_point_z_reg);
+							
+	j_X_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_J_s,
+							syn_clr				=>	'0',
+							d						=>	input_data(X_MSB DOWNTO X_LSB),
+							q						=>	j_point_x_reg);
+	
+	j_Y_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_J_s,
+							syn_clr				=>	'0',
+							d						=>	input_data(Y_MSB DOWNTO Y_LSB),
+							q						=>	j_point_y_reg);
+						
+	j_Z_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_J_s,
+							syn_clr				=>	'0',
+							d						=>	input_data(Z_MSB DOWNTO Z_LSB),
+							q						=>	j_point_z_reg);
+	
+	accum_X_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_accum_s,
+							syn_clr				=>	'0',
+							d						=>	accum_input_x_s,
+							q						=>	accum_x_reg);
+	
+	accum_Y_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_accum_s,
+							syn_clr				=>	'0',
+							d						=>	accum_input_y_s,
+							q						=>	accum_y_reg);
+	
+	accum_Z_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	DATA_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_accum_s,
+							syn_clr				=>	'0',
+							d						=>	accum_input_z_s,
+							q						=>	accum_z_reg);
+	
+	size_register: ENTITY WORK.my_register
+	GENERIC MAP(		DATA_WIDTH			=>	VOXEL_ADDR_WIDTH)
+	PORT MAP(			clk					=>	clk,
+							rst					=>	rst,
+							ena 					=>	en_size_s,
+							syn_clr				=>	'0',
+							d						=>	wr_addr_voxel_s,
+							q						=>	size_reg);
+	
+	
+	
+	--===================================
+	--		accum input Multiplexers
+	--===================================
+	accum_x_mux:	accum_input_x_s	<= current_point_x_reg WHEN sel_accum_s='0'	ELSE
+													accum_x_s;
+	
+	accum_y_mux:	accum_input_y_s	<= current_point_y_reg WHEN sel_accum_s='0'	ELSE
+													accum_y_s;
+	
+	accum_z_mux:	accum_input_z_s	<= current_point_z_reg WHEN sel_accum_s='0'	ELSE
+													accum_z_s;
+	
+	--===================================
+	--				Adders 
+	--===================================
+	
+	adder_voxel_full_saccum_x:	ENTITY work.int_adder
+	GENERIC MAP(	N			=>	DATA_WIDTH)
+	PORT MAP	(		A			=>	accum_x_reg,
+						B			=>	j_point_x_reg,
+						result	=>	accum_x_s);
+	
+	adder_accum_y:	ENTITY work.int_adder
+	GENERIC MAP(	N			=>	DATA_WIDTH)
+	PORT MAP	(		A			=>	accum_y_reg,
+						B			=>	j_point_y_reg,
+						result	=>	accum_y_s);
+	
+	adder_accum_z:	ENTITY work.int_adder
+	GENERIC MAP(	N			=>	DATA_WIDTH)
+	PORT MAP	(		A			=>	accum_z_reg,
+						B			=>	j_point_z_reg,
+						result	=>	accum_z_s);
+						
+--	size_adder:	ENTITY work.int_adder
+--	GENERIC MAP(	N			=>	VOXEL_ADDR_WIDTH)
+--	PORT MAP	(		A			=>	wr_addr_voxel_s,
+--						B			=>	ONE_BIN(VOXEL_ADDR_WIDTH-1 DOWNTO 0),
+--						result	=>	size_s);
+	
+	voxel_full_s	<=	'1'	when	wr_addr_voxel_s = MAX_VOXEL_SIZE ELSE	'0';
+						
+	--===================================
+	--				Divisors 
+	--===================================
+	divisor_x: ENTITY work.alt_int_divisor
+	PORT MAP(	denom		=>	n_s,
+					numer		=>	accum_x_reg,
+					quotient	=>	centroid_x_s,
+					remain	=>	OPEN);
+	
+	divisor_y: ENTITY work.alt_int_divisor
+	PORT MAP(	denom		=>	n_s,
+					numer		=>	accum_y_reg,
+					quotient	=>	centroid_y_s,
+					remain	=>	OPEN);
+	
+	divisor_z: ENTITY work.alt_int_divisor
+	PORT MAP(	denom		=>	n_s,
+					numer		=>	accum_z_reg,
+					quotient	=>	centroid_z_s,
+					remain	=>	OPEN);
+	
+	--===================================
+	--		Neighbour Detection Logic
+	--===================================
+	-- Calculate Distance
+	dist_x:	ENTITY work.abs_diff
+	GENERIC MAP(	N			=>	DATA_WIDTH)
+	PORT MAP	(		A			=>	current_point_x_reg,
+						B			=>	j_point_x_reg,
+						result	=>	dist_x_s);
+						
+	dist_y:	ENTITY work.abs_diff
+	GENERIC MAP(	N			=>	DATA_WIDTH)
+	PORT MAP	(		A			=>	current_point_y_reg,
+						B			=>	j_point_y_reg,
+						result	=>	dist_y_s);
+						
+	dist_z:	ENTITY work.abs_diff
+	GENERIC MAP(	N			=>	DATA_WIDTH)
+	PORT MAP	(		A			=>	current_point_z_reg,
+						B			=>	j_point_z_reg,
+						result	=>	dist_z_s);
+	
+	-- Neighbour detector
+	neighbour_detector_module:	ENTITY work.neighbour_detector
+	GENERIC MAP(	DATA_WIDTH		=>	DATA_WIDTH)
+	PORT MAP	(		dist_x			=>	dist_x_s,
+						dist_y			=>	dist_y_s,
+						dist_z			=>	dist_z_s,
+						neighbour		=>	neighbour_flag_s);
+						
+	
+	
+	--==============================
+	-- 		OUTPUT LOGIC
+	--==============================
+	--Voxel Point Data contruction
+	centroid_s <= centroid_z_s & centroid_y_s & centroid_x_s;
+	voxel_point	<=	centroid_s;
+	
+	--Write address to Voxel memory
+	wr_addr_voxel <=	wr_addr_voxel_s;
+	
+	--Output Size Assignation	
+	voxel_size	<=	size_reg;
+
+END ARCHITECTURE;
